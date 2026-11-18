@@ -58,7 +58,7 @@ export function review(ep, ageDays) {
 export function reviewText(r) {
   const { ep, ageDays, cur, prev, fans, conv, site } = r;
   const L = [`📈 第 ${ep.episode ?? '?'} 期发布 ${ageDays} 天复盘｜${ep.nick}`];
-  L.push(`全平台播放 ${fmt(cur.views)}，互动 ${fmt(cur.ints)}，互动率 ${pct(cur.ints, cur.views)}`);
+  L.push(`全平台阅读 ${fmt(cur.views)}，互动 ${fmt(cur.ints)}，互动率 ${pct(cur.ints, cur.views)}`);
   if (prev && prev.views) {
     const k = cur.views / prev.views;
     L.push(`同龄对比：上一期「${prev.nick}」第 ${ageDays} 天是 ${fmt(prev.views)}，这一期是它的 ${k >= 1 ? k.toFixed(1) + ' 倍' : pct(cur.views, prev.views, 0)}`);
@@ -68,11 +68,11 @@ export function reviewText(r) {
   for (const { p, m } of sorted) {
     const pm = prev && prev.rows.find(x => x.p === p);
     const cmp = pm && pm.m.views ? `，上一期同龄 ${fmt(pm.m.views)}` : '';
-    L.push(`${NAMES[p]}：播放 ${fmt(m.views)}（占 ${pct(m.views, cur.views, 0)}）${p === 'zsz' || !inter(m) ? '' : `｜互动率 ${pct(inter(m), m.views)}`}${cmp}`);
+    L.push(`${NAMES[p]}：阅读 ${fmt(m.views)}（占 ${pct(m.views, cur.views, 0)}）${p === 'zsz' || !inter(m) ? '' : `｜互动率 ${pct(inter(m), m.views)}`}${cmp}`);
   }
   const best = sorted[0], bestRate = [...cur.rows].filter(x => x.m.views >= 100).sort((a, b) => inter(b.m) / b.m.views - inter(a.m) / a.m.views)[0];
   L.push('');
-  if (best) L.push(`结论：播放主要来自 ${NAMES[best.p]}${bestRate && bestRate.p !== best.p ? `，互动最好的是 ${NAMES[bestRate.p]}（${pct(inter(bestRate.m), bestRate.m.views)}）` : ''}。`);
+  if (best) L.push(`结论：阅读主要来自 ${NAMES[best.p]}${bestRate && bestRate.p !== best.p ? `，互动最好的是 ${NAMES[bestRate.p]}（${pct(inter(bestRate.m), bestRate.m.views)}）` : ''}。`);
   if (Object.keys(fans.out).length) L.push(`发布后各平台涨粉 ${fans.sum >= 0 ? '+' : ''}${fmt(fans.sum)}（${Object.entries(fans.out).sort((a, b) => b[1] - a[1]).map(([p, v]) => `${NAMES[p]} ${v >= 0 ? '+' : ''}${fmt(v)}`).join('、')}）`);
   if (conv) L.push(`转化（按期归因）：注册 ${fmt(conv.reg)}｜会员 ${fmt(conv.vip)}｜订单 ${fmt(conv.orders)}｜收入 ¥${fmt(conv.revenue)}`);
   else if (site && site.reg != null) L.push(`${SITE.name}同期：新注册 ${fmt(site.reg)}｜新会员 ${fmt(site.vip)}｜收入 ¥${fmt(site.revenue)}（站点还没按期记录来源，这是同期总数）`);
@@ -102,12 +102,12 @@ export function weekly(now = Date.now()) {
   const L = [`🗓 麦田周报｜${dayOf(from).slice(5)} ～ ${dayOf(to).slice(5)}`];
   L.push(`发了 ${pubs.length} 期${pubs.length ? '：' + pubs.map(e => `「${nickOf(e)}」`).join('、') : ''}`);
   const hasM = db.prepare('SELECT 1 FROM metrics WHERE day>=? AND day<=? LIMIT 1').get(dayOf(from), dayOf(to));
-  L.push(hasM ? `全平台新增播放 ${fmt(cur.sum)}${vs(cur.sum, prv.sum)}` : '这一周麦田还没有流量数据（从接入麦田那天起才有）');
+  L.push(hasM ? `全平台新增阅读 ${fmt(cur.sum)}${vs(cur.sum, prv.sum)}` : '这一周麦田还没有流量数据（从接入麦田那天起才有）');
   L.push(`各平台涨粉 ${fans.sum >= 0 ? '+' : ''}${fmt(fans.sum)}${vs(fans.sum, fansP.sum)}`);
   if (site && site.reg != null) L.push(`${SITE.name}：新注册 ${fmt(site.reg)}${vs(site.reg, siteP && siteP.reg)}｜新会员 ${fmt(site.vip)}｜收入 ¥${fmt(site.revenue)}`);
   L.push('');
-  for (const [p, v] of Object.entries(cur.per).sort((a, b) => b[1] - a[1])) L.push(`${NAMES[p]}：新增播放 ${fmt(v)}${fans.out[p] != null ? `｜涨粉 ${fans.out[p] >= 0 ? '+' : ''}${fmt(fans.out[p])}` : ''}`);
-  if (cur.byEp[0]) { L.push(''); L.push(`这周最能打：「${nickOf(cur.byEp[0].e)}」新增 ${fmt(cur.byEp[0].es)} 播放`); }
+  for (const [p, v] of Object.entries(cur.per).sort((a, b) => b[1] - a[1])) L.push(`${NAMES[p]}：新增阅读 ${fmt(v)}${fans.out[p] != null ? `｜涨粉 ${fans.out[p] >= 0 ? '+' : ''}${fmt(fans.out[p])}` : ''}`);
+  if (cur.byEp[0]) { L.push(''); L.push(`这周最能打：「${nickOf(cur.byEp[0].e)}」新增 ${fmt(cur.byEp[0].es)} 阅读`); }
   return { key: dayOf(from), text: L.join('\n') };
 }
 

@@ -255,11 +255,11 @@ async function collectMetrics(ep) {
     const prev = prevMetric(ep.id, t.platform, day), d = prev && m.views != null && prev.views != null ? m.views - prev.views : null;
     total += m.views || 0; totalDelta += d || 0;
     const f = (k, v) => v == null ? '' : `｜${k} ${v}`;
-    lines.push(`${NAMES[t.platform]}：播放 ${m.views ?? '-'}${d != null ? `（${d >= 0 ? '+' : ''}${d}）` : ''}${f('赞', m.likes)}${f('评', m.comments)}${f('藏', m.favorites)}${f('转', m.shares)}${Object.entries(m.extra || {}).filter(([, v]) => v).map(([k, v]) => f(k, v)).join('')}`);
+    lines.push(`${NAMES[t.platform]}：阅读 ${m.views ?? '-'}${d != null ? `（${d >= 0 ? '+' : ''}${d}）` : ''}${f('赞', m.likes)}${f('评', m.comments)}${f('藏', m.favorites)}${f('转', m.shares)}${Object.entries(m.extra || {}).filter(([, v]) => v).map(([k, v]) => f(k, v)).join('')}`);
     await drv.sleep(3000);   // 一个一个来，放慢
   }
   if (!lines.length) return null;
-  return `【${ep.episode ? ep.episode + ' 期 ' : ''}${ep.name.split(/[｜|]/)[0]}】${any ? `全平台播放 ${total}${totalDelta ? `（较上次 +${totalDelta}）` : ''}` : ''}\n${lines.join('\n')}`;
+  return `【${ep.episode ? ep.episode + ' 期 ' : ''}${ep.name.split(/[｜|]/)[0]}】${any ? `全平台阅读 ${total}${totalDelta ? `（较上次 +${totalDelta}）` : ''}` : ''}\n${lines.join('\n')}`;
 }
 async function metricsReport(list) {
   const parts = [];
