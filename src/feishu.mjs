@@ -50,6 +50,8 @@ async function post(body) {
 // 发飞书群消息；卡片发不出去就退回纯文字；失败只打印，不影响主流程
 export async function notify(text, { quiet = false } = {}) {
   if (!quiet) console.log(`[飞书] ${text.replace(/\n/g, ' | ')}`);   // quiet：验证码之类的不写日志
+  // 配了微信网关就先走微信；发出去了就结束，没发出去（排队或网关没开）再走飞书兜底
+  if (config.wechat?.notify) { const { sendWechat } = await import('./wechat.mjs'); if ((await sendWechat(text, config.wechat, { quiet })).sent) return; }
   if (!config.feishuWebhook) return;
   try {
     let j = await post({ msg_type: 'interactive', card: toCard(text) });

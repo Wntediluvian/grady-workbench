@@ -181,7 +181,7 @@ async function handle(req, res) {
 export function startWeb() {
   const srv = http.createServer((req, res) => { handle(req, res).catch((e) => { try { send(res, 500, { error: e.message }); } catch {} }); });
   initLogin(ROOT);
-  srv.listen(W.port, '0.0.0.0', () => console.log(`麦田网页：http://localhost:${W.port}/?key=${W.key}`));
+  srv.listen(W.port, W.host || '0.0.0.0', () => console.log(`麦田网页：http://localhost:${W.port}/?key=${W.key}`));
   srv.on('error', (e) => console.error('麦田网页没起来：' + e.message));
   return srv;
 }
