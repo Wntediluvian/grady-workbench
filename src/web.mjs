@@ -137,14 +137,14 @@ async function handle(req, res) {
     return send(res, 200, widgetPage(widgetScript(req, 'maitian-loader.js')), 'text/html; charset=utf-8');
   }
   if (u.pathname === '/api/overview') {
-    return send(res, 200, { name: config.name || '麦田', siteOn: !!SITE, learn: learnOn(config) ? learnUrl('maitian-board') : '', siteName: SITE ? SITE.name : '', siteLogo: !!(SITE && config.site.logo), board: config.board && config.board.url, driver: config.driver,
+    return send(res, 200, { name: config.name || '麦田', siteOn: !!SITE, learn: learnOn(config) ? learnUrl('maitian-board') : '', siteName: SITE ? SITE.name : '', siteLogo: !!(SITE && config.site.logo), platforms: Array.isArray(config.platforms) ? config.platforms : null, board: config.board && config.board.url, driver: config.driver,
       episodes: episodes().sort((a, b) => (b.episode || 0) - (a.episode || 0)).map(e => episodeView(e)), actions: actions.slice(-8).reverse(),
       site: { days: db.prepare('SELECT * FROM site_daily ORDER BY day').all(), channels: db.prepare('SELECT * FROM site_channels ORDER BY revenue DESC').all(),
         campaigns: db.prepare('SELECT * FROM site_campaigns ORDER BY reg DESC').all(), campaignsOn: getMeta('siteCampaigns') === 'on' },
       metrics: db.prepare('SELECT day, episode_id, platform, views FROM metrics ORDER BY day').all(),
       followers: db.prepare("SELECT day, platform, total, gain, loss, source FROM followers WHERE day >= date('now','localtime','-40 day') ORDER BY day").all(),
       samples: db.prepare('SELECT ts, episode_id, platform, views FROM samples ORDER BY ts').all(),
-      feed: feed(), health: { nas: fs.existsSync(config.rootPath), chrome: await chromeUp(), metricsDay: getMeta('metricsDay') || '', doctorDay: getMeta('doctorDay') || '', login: Object.fromEntries((config.keepAlive || []).map(k => [k, getMeta(`login:${k}`) || '']) ) }, now: new Date().toISOString() });
+      feed: feed(), health: { nasOn: !!config.nasUrl, chromeOn: !!config.chromePort, dataDay: (db.prepare('SELECT MAX(day) d FROM metrics').get() || {}).d || '', nas: fs.existsSync(config.rootPath), chrome: await chromeUp(), metricsDay: getMeta('metricsDay') || '', doctorDay: getMeta('doctorDay') || '', login: Object.fromEntries((config.keepAlive || []).map(k => [k, getMeta(`login:${k}`) || '']) ) }, now: new Date().toISOString() });
   }
   if (u.pathname === '/site-logo') { const f = SITE && config.site.logo && path.resolve(ROOT, config.site.logo); return f && fs.existsSync(f) ? send(res, 200, fs.readFileSync(f), /\.svg$/.test(f) ? 'image/svg+xml' : /\.jpe?g$/.test(f) ? 'image/jpeg' : 'image/png', { 'cache-control': 'max-age=3600' }) : send(res, 404, ''); }
   if (u.pathname === '/api/episode') { const ep = getEpisode(u.searchParams.get('id')); return ep ? send(res, 200, episodeView(ep, true)) : send(res, 404, { error: '没有这一期' }); }
@@ -181,7 +181,7 @@ async function handle(req, res) {
 export function startWeb() {
   const srv = http.createServer((req, res) => { handle(req, res).catch((e) => { try { send(res, 500, { error: e.message }); } catch {} }); });
   initLogin(ROOT);
-  srv.listen(W.port, '0.0.0.0', () => console.log(`麦田网页：http://localhost:${W.port}/?key=${W.key}`));
+  srv.listen(W.port, W.host || '0.0.0.0', () => console.log(`麦田网页：http://localhost:${W.port}/?key=${W.key}`));
   srv.on('error', (e) => console.error('麦田网页没起来：' + e.message));
   return srv;
 }

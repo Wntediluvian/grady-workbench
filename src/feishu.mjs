@@ -3,6 +3,8 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const CFG = process.env.MAITIAN_CONFIG || path.join(ROOT, 'config.json');
 if (!fs.existsSync(CFG)) { console.error('还没有 config.json：先运行 node src/init.mjs（安装向导），或者 node src/demo.mjs 用假数据看看效果'); process.exit(1); }
 export const config = JSON.parse(fs.readFileSync(CFG, 'utf8'));
+// config.timezone：电脑时区和账号所在时区不一样时写上（如 Asia/Shanghai），按天统计才不会错位
+if (config.timezone) process.env.TZ = config.timezone;
 
 // ---------- 文字 → 飞书卡片（2026-11-14） ----------
 // 调用方仍然传文字：第一行当标题，开头的表情决定卡片颜色；「平台：状态（说明） 链接」这种行排成带颜色的状态行。
@@ -50,6 +52,8 @@ async function post(body) {
 // 发飞书群消息；卡片发不出去就退回纯文字；失败只打印，不影响主流程
 export async function notify(text, { quiet = false } = {}) {
   if (!quiet) console.log(`[飞书] ${text.replace(/\n/g, ' | ')}`);   // quiet：验证码之类的不写日志
+  // 配了微信网关就先走微信；发出去了就结束，没发出去（排队或网关没开）再走飞书兜底
+  if (config.wechat?.notify) { const { sendWechat } = await import('./wechat.mjs'); if ((await sendWechat(text, config.wechat, { quiet })).sent) return; }
   if (!config.feishuWebhook) return;
   try {
     let j = await post({ msg_type: 'interactive', card: toCard(text) });
