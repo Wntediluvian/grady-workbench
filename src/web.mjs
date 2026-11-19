@@ -106,6 +106,7 @@ function thumb(f, w) {
 async function handle(req, res) {
   const u = new URL(req.url, 'http://x');
   // 采集插件交读数：用自己的口令（config.web.collectToken），不走网页登录
+  if (u.pathname === '/api/collect/build') { const { handleBuild } = await import('./collect.mjs'); return handleBuild(u, res, send, W.collectToken, tokenEq); }
   if (u.pathname === '/api/collect' && req.method === 'POST') { const { handleCollect } = await import('./collect.mjs'); return handleCollect(req, res, send, W.collectToken, tokenEq); }
   // 访问控制：前面挂了 Cloudflare Access（邮箱验证码）就认它的登录凭证；否则用口令（第一次带 ?key= 进来，之后用 cookie）
   if (/^\/static\/icon-\d+\.png$/.test(u.pathname)) return send(res, 200, fs.readFileSync(path.join(DIR, 'web', path.basename(u.pathname))), 'image/png', { 'cache-control': 'max-age=86400' });   // 主屏幕图标不用登录

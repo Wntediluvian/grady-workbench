@@ -3,7 +3,9 @@
 //   item: { title, publishedAt（ISO，带时区）, statusId（X 的帖子编号）, views, likes, comments, shares, favorites }
 // 怎么对上已登记的文章：X 按帖子编号对链接；公众号按标题；其余平台按“发布于 YYYY-MM-DD HH:MM”（北京时间，精确到分）。
 // 对不上的条目（短帖、还没登记的文章）不入库，只在返回里计数。口令是 config.web.collectToken，和网页口令分开。
+import fs from 'node:fs'; import path from 'node:path'; import { fileURLToPath } from 'node:url';
 import { db, saveMetric, log, setMeta } from './db.mjs';
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 db.exec('CREATE TABLE IF NOT EXISTS followers (day TEXT, platform TEXT, total INTEGER, gain INTEGER, loss INTEGER, source TEXT, collected_at TEXT, PRIMARY KEY (day, platform));');
 const bj = (t) => new Date(new Date(t).getTime() + 8 * 3600e3).toISOString();
@@ -47,9 +49,19 @@ export function ingest(payload) {
     }
     setMeta(`collect:${p}`, new Date().toISOString());
   }
-  setMeta('metricsDay', day);
-  log('', '', 'collect', JSON.stringify(out.platforms).slice(0, 1500));
+  if ((payload.results || []).some((r) => !r.error)) setMeta('metricsDay', day);
+  const line = `${payload.profile || '?'} ${payload.build || ''} ${(payload.results || []).length ? JSON.stringify(out.platforms) : '开始采集'}`;
+  console.log(`[采集] ${new Date().toISOString().slice(0, 19)} ${line}`.slice(0, 900));
+  log('', '', 'collect', line.slice(0, 1500));
   return out;
+}
+
+// GET /api/collect/build?token=…：磁盘上采集插件的编号。插件拿它和自己正在跑的比，不一样就自己重新加载
+export function handleBuild(u, res, send, token, tokenEq) {
+  if (!token || !tokenEq(String(u.searchParams.get('token') || ''), token)) return send(res, 401, { error: '采集口令不对' });
+  let build = '';
+  try { build = (fs.readFileSync(path.join(ROOT, 'extension-collector', 'background.js'), 'utf8').match(/const BUILD = '([^']+)'/) || [])[1] || ''; } catch {}
+  return send(res, 200, { build });
 }
 
 export async function handleCollect(req, res, send, token, tokenEq) {

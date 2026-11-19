@@ -1,8 +1,13 @@
 // 麦田采集（只读）：每天第一次机会（北京时间 9 点以后）把各平台后台列表页读一遍，交给本机麦田。
 // 点工具栏图标 = 现在采一次。一次只开一个页面，读完就关；没登录的平台记下来以后跳过，点图标时会重试。
 import * as P from './pages.js';
-import { BASE, TOKEN, X_HANDLE, PROFILE } from './token.js';
+import { BASE, TOKEN, X_HANDLE, PROFILE, ACCOUNTS } from './token.js';
+// ACCOUNTS：每个平台只认这一个账号（抖音号、小红书账号、B站 mid、公众号名称）。
+// 这个浏览器里登录的是别的账号，或者没配账号，就不读它的数据，免得把别的号的数记进来。
 
+// 每次改了这个文件夹里的代码就改这个编号。插件开工前会问麦田磁盘上的编号是多少，不一样就自己重新加载，
+// 所以以后改读取规则不用再去扩展管理页手动点“重新加载”。
+const BUILD = '2026-11-19.2';
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const bjNow = () => new Date(Date.now() + 8 * 3600e3);
 const bjDay = () => bjNow().toISOString().slice(0, 10);
@@ -40,26 +45,35 @@ async function readStep(step) {
 }
 
 // B站粉丝数：用已登录的身份问它自己的公开接口（和麦田原来的做法一样）
-async function biliFans() {
+async function biliWho() {
   try {
     const nav = await fetch('https://api.bilibili.com/x/web-interface/nav', { credentials: 'include' }).then((r) => r.json());
     const mid = nav && nav.data && nav.data.mid;
-    if (!mid) return null;
+    if (!mid) return { mid: '' };
     const st = await fetch(`https://api.bilibili.com/x/relation/stat?vmid=${mid}`, { credentials: 'include' }).then((r) => r.json());
-    return st && st.data ? st.data.follower : null;
-  } catch { return null; }
+    return { mid: String(mid), followers: st && st.data ? st.data.follower : null };
+  } catch { return { mid: '' }; }
 }
 
 async function collectPlatform(p) {
   const out = { platform: p, followers: null, items: [] };
+  const want = String((ACCOUNTS || {})[p] || '');
+  if (p !== 'x' && !want) return { platform: p, error: 'no_account_configured' };
+  if (p === 'bilibili') {   // 先核对账号，再开页面
+    const who = await biliWho();
+    if (!who.mid) return { platform: p, error: 'not_logged_in' };
+    if (who.mid !== want) return { platform: p, error: 'wrong_account' };
+    out.followers = who.followers ?? null;
+  }
   for (const step of PLANS[p]) {
     const r = await readStep(step);
     if (r.error) return { platform: p, error: r.error };
+    if (r.account !== undefined && r.account !== want) return { platform: p, error: r.account ? 'wrong_account' : 'not_logged_in' };
+    if (r.head !== undefined && !r.head.includes(want)) return { platform: p, error: 'wrong_account' };
     if (r.followers != null) out.followers = r.followers;
     if (r.items) out.items.push(...r.items);
     await sleep(3000 + Math.random() * 4000);
   }
-  if (p === 'bilibili') out.followers = await biliFans();
   return out;
 }
 
@@ -82,10 +96,10 @@ async function collectAll(force) {
       if (!PLANS[p].length || off[p]) continue;
       let r;
       try { r = await collectPlatform(p); } catch (e) { r = { platform: p, error: String(e.message || e).slice(0, 120) }; }
-      if (r.error === 'not_logged_in') off[p] = bjDay();   // 这个浏览器没登录这个平台：以后不再打开，点图标时重试
+      if (['not_logged_in', 'wrong_account', 'no_account_configured'].includes(r.error)) off[p] = bjDay();   // 这个浏览器没登录、登录的是别的号、或没配账号：以后不再打开，点图标时重试
       results.push(r);
     }
-    const payload = { profile: PROFILE, at: new Date().toISOString(), results };
+    const payload = { profile: await who(), at: new Date().toISOString(), build: BUILD, results };
     const pending = [...(st.pending || []), payload].slice(-5);
     const left = [];
     for (const one of pending) { try { await post(one); } catch { left.push(one); } }
@@ -94,11 +108,42 @@ async function collectAll(force) {
   } finally { running = false; }
 }
 
+// 磁盘上的代码比正在跑的新：记下“重载后要不要接着采”，然后重新加载自己。返回 true 表示已经去重载了
+async function reloadIfStale(thenRun) {
+  try {
+    const r = await fetch(`${BASE}/api/collect/build?token=${encodeURIComponent(TOKEN)}`);
+    const disk = r.ok ? (await r.json()).build : '';
+    if (!disk || disk === BUILD) return false;
+    await chrome.storage.local.set({ runAfterReload: thenRun || '' });
+    chrome.runtime.reload();
+    return true;
+  } catch { return false; }
+}
+// 同一个文件夹会装进几个浏览器配置：给每个配置随机起个短编号，麦田那边才分得清是谁交的
+async function who() {
+  let { pid } = await chrome.storage.local.get('pid');
+  if (!pid) { pid = Math.random().toString(36).slice(2, 6); await chrome.storage.local.set({ pid }); }
+  return `${PROFILE || 'browser'}-${pid}`;
+}
+async function start(force) {
+  if (await reloadIfStale(force ? 'force' : 'auto')) return;
+  const me = await who();
+  await post({ profile: me, at: new Date().toISOString(), build: BUILD, results: [] }).catch(() => {});   // 先打个招呼，麦田那边能看到“开始采了”
+  try { await collectAll(force); } catch (e) { await post({ profile: me, at: new Date().toISOString(), build: BUILD, results: [{ platform: '_run', error: String(e && e.message || e).slice(0, 200) }] }).catch(() => {}); running = false; await chrome.action.setBadgeText({ text: '!' }); }
+}
+
 chrome.runtime.onInstalled.addListener(() => chrome.alarms.create('tick', { periodInMinutes: 30, delayInMinutes: 2 }));
 chrome.runtime.onStartup.addListener(() => chrome.alarms.create('tick', { periodInMinutes: 30, delayInMinutes: 5 }));
 chrome.alarms.onAlarm.addListener(async (a) => {
   if (a.name !== 'tick') return;
   const { lastRunDay } = await chrome.storage.local.get('lastRunDay');
-  if (bjNow().getUTCHours() >= 9 && lastRunDay !== bjDay()) await collectAll(false);
+  if (bjNow().getUTCHours() >= 9 && lastRunDay !== bjDay()) await start(false);
+  else await reloadIfStale('');
 });
-chrome.action.onClicked.addListener(() => collectAll(true));
+chrome.action.onClicked.addListener(() => start(true));
+// 刚因为代码更新重载过：把重载前要做的那次采集接着做完
+chrome.storage.local.get('runAfterReload').then(async (v) => {
+  if (!v.runAfterReload) return;
+  await chrome.storage.local.remove('runAfterReload');
+  await start(v.runAfterReload === 'force');
+});

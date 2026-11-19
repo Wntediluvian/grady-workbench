@@ -32,15 +32,16 @@ export function douyinList() {
 export function douyinHome() {
   const m = document.body.innerText.match(/\n\s*粉丝\s*\n\s*([\d.万]+)/);
   const wan = (s) => (s.endsWith('万') ? Math.round(parseFloat(s) * 10000) : +s);
-  const i = document.body.innerText.indexOf('关注');
-  return { followers: m ? wan(m[1]) : null, raw: document.body.innerText.slice(Math.max(0, i), i + 40).replace(/\s+/g, ' ') };
+  const who = document.body.innerText.match(/抖音号[:：]\s*(\S+)/);
+  return { account: who ? who[1] : '', followers: m ? wan(m[1]) : null };
 }
 
 // 小红书 首页：“828 粉丝数”
 export function xhsHome() {
   const m = document.body.innerText.match(/([\d.万]+)\s*\n\s*粉丝数/);
   const wan = (s) => (s.endsWith('万') ? Math.round(parseFloat(s) * 10000) : +s);
-  return { followers: m ? wan(m[1]) : null };
+  const who = document.body.innerText.match(/小红书账号[:：]\s*(\S+)/);
+  return { account: who ? who[1] : '', followers: m ? wan(m[1]) : null };
 }
 
 // 小红书 笔记管理：标题 | 北京时间 | 观看 | 评论 | 点赞 | 收藏 | 分享
@@ -75,7 +76,8 @@ export function wechatHome() {
   const re = /已发表 \| ([^|]+?) \| (\d+) \| (\d+) \| (\d+) \| (\d+)/g;
   let m;
   while ((m = re.exec(t))) items.push({ title: m[1].trim(), views: +m[2], likes: +m[3], shares: +m[4], comments: +m[5] });
-  return { followers: f ? +f[1].replace(/,/g, '') : null, items };
+  // 公众号后台页面上没有固定的账号编号，把页面开头一段文字交回去，由调用方看里面有没有账号名
+  return { head: t.slice(0, 400), followers: f ? +f[1].replace(/,/g, '') : null, items };
 }
 
 // X 个人主页：边滚边记每条帖子的编号和读数（列表是虚拟滚动的，滚过去的条目会被移除）
