@@ -7,17 +7,20 @@ import { BASE, TOKEN, X_HANDLE, PROFILE, ACCOUNTS } from './token.js';
 
 // 每次改了这个文件夹里的代码就改这个编号。插件开工前会问麦田磁盘上的编号是多少，不一样就自己重新加载，
 // 所以以后改读取规则不用再去扩展管理页手动点“重新加载”。
-const BUILD = '2026-11-19.2';
+const BUILD = '2026-11-19.3';
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const bjNow = () => new Date(Date.now() + 8 * 3600e3);
 const bjDay = () => bjNow().toISOString().slice(0, 10);
 
+// 顺序有讲究：先读要核对账号的平台，X 放最后。X 的主页是公开的，核对不了登录的是谁，
+// 所以只有这个浏览器里至少有一个平台核对上了账号（说明这是放自媒体账号的那个配置），才读 X。
+// 这样插件即使被装进别的浏览器配置，也什么都不会交。
 const PLANS = {
-  x: X_HANDLE ? [{ url: `https://x.com/${X_HANDLE}`, fn: P.xProfile }] : [],
   douyin: [{ url: 'https://creator.douyin.com/creator-micro/home', fn: P.douyinHome }, { url: 'https://creator.douyin.com/creator-micro/content/manage', fn: P.douyinList, scroll: true }],
   xhs: [{ url: 'https://creator.xiaohongshu.com/new/home', fn: P.xhsHome }, { url: 'https://creator.xiaohongshu.com/new/note-manager', fn: P.xhsList, scroll: true }],
   bilibili: [{ url: 'https://member.bilibili.com/platform/upload-manager/opus', fn: P.biliList, allFrames: true, settle: 9000 }],
   wechat: [{ url: 'https://mp.weixin.qq.com/', fn: P.wechatHome }],
+  x: X_HANDLE ? [{ url: `https://x.com/${X_HANDLE}`, fn: P.xProfile }] : [],
 };
 
 async function waitLoaded(tabId, ms = 40000) {
@@ -94,6 +97,7 @@ async function collectAll(force) {
   try {
     for (const p of Object.keys(PLANS)) {
       if (!PLANS[p].length || off[p]) continue;
+      if (p === 'x' && !results.some((r) => !r.error)) { results.push({ platform: 'x', error: 'not_home_profile' }); continue; }
       let r;
       try { r = await collectPlatform(p); } catch (e) { r = { platform: p, error: String(e.message || e).slice(0, 120) }; }
       if (['not_logged_in', 'wrong_account', 'no_account_configured'].includes(r.error)) off[p] = bjDay();   // 这个浏览器没登录、登录的是别的号、或没配账号：以后不再打开，点图标时重试
