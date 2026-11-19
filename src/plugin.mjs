@@ -34,6 +34,6 @@ export function pluginInfo() {
 
 export function pluginDir() {
   const p = pluginInfo();
-  if (!p.dir) throw new Error(`还没装麦田发布助手：运行 node src/hub.mjs login，在打开的专用 Chrome 里从应用商店点「添加至 Chrome」（${STORE_URL}）`);
+  if (!p.dir) throw new Error(`还没装发布助手：运行 node src/hub.mjs login，在打开的专用 Chrome 里从应用商店点「添加至 Chrome」（${STORE_URL}）`);
   return p.dir;
 }

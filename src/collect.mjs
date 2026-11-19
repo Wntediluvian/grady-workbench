@@ -1,4 +1,4 @@
-// 接收“麦田采集”插件交来的读数：各平台后台列表页上每篇的阅读和互动、各平台粉丝数。
+// 接收“工作台采集”插件交来的读数：各平台后台列表页上每篇的阅读和互动、各平台粉丝数。
 // POST /api/collect  { token, profile, at, results: [{ platform, followers, items: [...], error }] }
 //   item: { title, publishedAt（ISO，带时区）, statusId（X 的帖子编号）, views, likes, comments, shares, favorites }
 // 怎么对上已登记的文章：X 按帖子编号对链接；公众号按标题；其余平台按“发布于 YYYY-MM-DD HH:MM”（北京时间，精确到分）。

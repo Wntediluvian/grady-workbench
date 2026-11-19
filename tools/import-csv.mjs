@@ -1,7 +1,7 @@
-// 把已发文章的数据表导进麦田：一篇文章一期，各平台记为“已发布”并带链接，表里的读数按采集日存成每日流量。
+// 把已发文章的数据表导进工作台：一篇文章一期，各平台记为“已发布”并带链接，表里的读数按采集日存成每日流量。
 // 用法：node tools/import-csv.mjs <文章数据.csv> [--only 标识1,标识2] [--articles <文章目录>] [--projects <工程目录>] [--dry]
 //   --articles  文章档案的根目录（每篇一个以标识命名的文件夹），用来找封面
-//   --projects  给每篇建一个麦田工程目录（publish.json + 封面），大屏的封面和详情页靠它；不给就只登记数据
+//   --projects  给每篇建一个工作台工程目录（publish.json + 封面），大屏的封面和详情页靠它；不给就只登记数据
 // 表头（UTF-8，可带 BOM）：采集日期(北京),文章标识,标题,平台,发布时间(北京),链接,浏览,点赞,评论,分享,收藏,其他,备注
 // 可以重复跑：同一篇、同一平台、同一采集日会覆盖，不会重复。没有文章标识的行（以“（”开头）跳过。
 import fs from 'node:fs'; import path from 'node:path';
@@ -109,7 +109,7 @@ for (const [id, list] of byId) {
   console.log(`第 ${episode ?? '–'} 期｜${id}｜${name.slice(0, 24)}｜首发 ${first ? first.slice(0, 16) : '未知'}｜${merged.size} 个读数`);
   if (!dry) {
     upsertEpisode({ id, episode, name, dir, schedule: first });
-    // 麦田按登记时间排“最新一期”；导入的旧文章把登记时间对齐到首发时间，顺序才对
+    // 工作台按登记时间排“最新一期”；导入的旧文章把登记时间对齐到首发时间，顺序才对
     if (first) db.prepare('UPDATE episodes SET created_at=? WHERE id=?').run(new Date(first).toISOString(), id);
     db.prepare('DELETE FROM snapshots WHERE episode_id=?').run(id);
   }
