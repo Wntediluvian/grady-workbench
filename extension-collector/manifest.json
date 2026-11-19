@@ -1,9 +1,14 @@
 {
   "manifest_version": 3,
-  "name": "麦田采集（只读）",
-  "description": "每天读一次你自己各平台创作后台的列表页（阅读、互动、粉丝数），交给本机的麦田工作台。只读页面，不点、不填、不发。",
-  "version": "0.1.0",
-  "permissions": ["scripting", "tabs", "alarms", "storage"],
+  "name": "Grady 采集（只读）",
+  "description": "每天读一次你自己各平台创作后台的列表页（阅读、互动、粉丝数），交给本机的 Grady 工作台。只读页面，不点、不填、不发。",
+  "version": "0.1.1",
+  "permissions": [
+    "scripting",
+    "tabs",
+    "alarms",
+    "storage"
+  ],
   "host_permissions": [
     "https://x.com/*",
     "https://creator.douyin.com/*",
@@ -13,6 +18,11 @@
     "https://mp.weixin.qq.com/*",
     "http://127.0.0.1:8787/*"
   ],
-  "background": { "service_worker": "background.js", "type": "module" },
-  "action": { "default_title": "麦田采集：点一下，现在采一次" }
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "action": {
+    "default_title": "Grady 采集：点一下，现在采一次"
+  }
 }

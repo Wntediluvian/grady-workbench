@@ -1,13 +1,13 @@
-// 麦田采集（只读）：每天第一次机会（北京时间 9 点以后）把各平台后台列表页读一遍，交给本机麦田。
+// Grady 采集（只读）：每天第一次机会（北京时间 9 点以后）把各平台后台列表页读一遍，交给本机工作台。
 // 点工具栏图标 = 现在采一次。一次只开一个页面，读完就关；没登录的平台记下来以后跳过，点图标时会重试。
 import * as P from './pages.js';
 import { BASE, TOKEN, X_HANDLE, PROFILE, ACCOUNTS } from './token.js';
 // ACCOUNTS：每个平台只认这一个账号（抖音号、小红书账号、B站 mid、公众号名称）。
 // 这个浏览器里登录的是别的账号，或者没配账号，就不读它的数据，免得把别的号的数记进来。
 
-// 每次改了这个文件夹里的代码就改这个编号。插件开工前会问麦田磁盘上的编号是多少，不一样就自己重新加载，
+// 每次改了这个文件夹里的代码就改这个编号。插件开工前会问工作台磁盘上的编号是多少，不一样就自己重新加载，
 // 所以以后改读取规则不用再去扩展管理页手动点“重新加载”。
-const BUILD = '2026-11-19.3';
+const BUILD = '2026-11-19.4';
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const bjNow = () => new Date(Date.now() + 8 * 3600e3);
 const bjDay = () => bjNow().toISOString().slice(0, 10);
@@ -47,7 +47,7 @@ async function readStep(step) {
   } finally { await chrome.tabs.remove(tab.id).catch(() => {}); }
 }
 
-// B站粉丝数：用已登录的身份问它自己的公开接口（和麦田原来的做法一样）
+// B站粉丝数：用已登录的身份问它自己的公开接口（和工作台原来的做法一样）
 async function biliWho() {
   try {
     const nav = await fetch('https://api.bilibili.com/x/web-interface/nav', { credentials: 'include' }).then((r) => r.json());
@@ -82,7 +82,7 @@ async function collectPlatform(p) {
 
 async function post(payload) {
   const r = await fetch(`${BASE}/api/collect`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ token: TOKEN, ...payload }) });
-  if (!r.ok) throw new Error(`麦田返回 ${r.status}`);
+  if (!r.ok) throw new Error(`工作台返回 ${r.status}`);
   return r.json();
 }
 
@@ -123,7 +123,7 @@ async function reloadIfStale(thenRun) {
     return true;
   } catch { return false; }
 }
-// 同一个文件夹会装进几个浏览器配置：给每个配置随机起个短编号，麦田那边才分得清是谁交的
+// 同一个文件夹会装进几个浏览器配置：给每个配置随机起个短编号，工作台那边才分得清是谁交的
 async function who() {
   let { pid } = await chrome.storage.local.get('pid');
   if (!pid) { pid = Math.random().toString(36).slice(2, 6); await chrome.storage.local.set({ pid }); }
@@ -132,7 +132,7 @@ async function who() {
 async function start(force) {
   if (await reloadIfStale(force ? 'force' : 'auto')) return;
   const me = await who();
-  await post({ profile: me, at: new Date().toISOString(), build: BUILD, results: [] }).catch(() => {});   // 先打个招呼，麦田那边能看到“开始采了”
+  await post({ profile: me, at: new Date().toISOString(), build: BUILD, results: [] }).catch(() => {});   // 先打个招呼，工作台那边能看到“开始采了”
   try { await collectAll(force); } catch (e) { await post({ profile: me, at: new Date().toISOString(), build: BUILD, results: [{ platform: '_run', error: String(e && e.message || e).slice(0, 200) }] }).catch(() => {}); running = false; await chrome.action.setBadgeText({ text: '!' }); }
 }
 

@@ -24,6 +24,7 @@ const fmt = (n) => n == null ? '–' : Math.round(n).toLocaleString('en-US');
 const kfmt = (n) => n == null ? '–' : n >= 100000 ? (n / 10000).toFixed(1) + ' 万' : fmt(n);
 const sgn = (n) => (n > 0 ? '+' : '') + fmt(n);
 const pad = (n) => String(n).padStart(2, '0');
+const brand = (n) => (!n || n === '麦田' ? '麦<i>田</i>' : n.includes(' ') ? `${esc(n.split(' ')[0])} <i>${esc(n.split(' ').slice(1).join(' '))}</i>` : esc(n));   // 左上角的名字：取 config.name，空格后面的部分用强调色
 const pct = (a, b, d = 0) => b ? (a / b * 100).toFixed(d) + '%' : '–';
 let PL = ['bilibili', 'douyin', 'xhs', 'channels', 'youtube', 'x', 'instagram', 'zsz'], FANP = ['bilibili', 'douyin', 'xhs', 'channels', 'youtube', 'x', 'instagram'];
 const PN = { bilibili: 'B站', douyin: '抖音', xhs: '小红书', channels: '视频号', youtube: 'YouTube', x: 'X', instagram: 'Instagram', zsz: '知识站', wechat: '公众号' };
@@ -170,7 +171,7 @@ function render() {
   };
   const f0 = O.feed[0];
   $('#screen').innerHTML = `
-  <div class="top"><div class="logo">麦<i>田</i></div><div class="tag">内容与粉丝监控</div>
+  <div class="top"><div class="logo">${brand(O.name)}</div><div class="tag">内容与粉丝监控</div>
     <div class="nav"><a class="on" href="/">大屏</a><a href="/p#/traffic">流量</a><a href="/p#/calendar">日历</a><a href="/p#/convert">转化</a><a href="/p#/archive">档案</a><a href="/p#/system">系统</a></div>
     <div class="lights">${h.chromeOn ? '<span class="light ok">守护进程 运行中</span>' : `<span class="light ${h.dataDay && (Date.now() - new Date(h.dataDay + 'T00:00:00+08:00')) < 2.5 * 864e5 ? 'ok' : 'warn'}">数据 ${h.dataDay ? '更新到 ' + h.dataDay.slice(5) : '还没采'}</span>`}<span class="light ${h.nas ? 'ok' : 'bad'}">${h.nasOn ? 'NAS' : '工程目录'} ${h.nas ? (h.nasOn ? '已挂载' : '正常') : '读不到'}</span>${h.chromeOn ? `<span class="light ${h.chrome ? 'ok' : 'bad'}">专用浏览器 ${h.chrome ? '在线' : '没开'}</span>` : ''}
       <span class="light ${!loginOk ? 'bad' : checked ? 'ok' : 'warn'}">平台登录 ${!loginOk ? '有掉线' : checked ? '今日已检' : '今天还没检'}</span></div>
@@ -211,7 +212,7 @@ function tick() {
   }
 }
 async function load() {
-  try { const r = await fetch('/api/overview'); if (!r.ok) throw new Error(r.status); O = await r.json(); if (O.platforms) { PL = O.platforms.slice(); FANP = PL.filter(p => p !== 'zsz'); } if (!O.siteOn) PL = PL.filter(p => p !== 'zsz'); else { if (O.siteName) PN.zsz = O.siteName; if (O.siteLogo) LOGO.zsz = { img: '/site-logo' }; } render(); }
+  try { const r = await fetch('/api/overview'); if (!r.ok) throw new Error(r.status); O = await r.json(); if (O.name) document.title = O.name; if (O.platforms) { PL = O.platforms.slice(); FANP = PL.filter(p => p !== 'zsz'); } if (!O.siteOn) PL = PL.filter(p => p !== 'zsz'); else { if (O.siteName) PN.zsz = O.siteName; if (O.siteLogo) LOGO.zsz = { img: '/site-logo' }; } render(); }
   catch (e) { if (!O) $('#screen').innerHTML = `<div class="empty">连不上麦田服务（${esc(e.message)}）</div>`; else console.error(e); }
 }
 const tip = $('#tip');
