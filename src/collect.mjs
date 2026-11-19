@@ -21,6 +21,18 @@ function findEpisode(platform, it) {
     const stamp = bj(it.publishedAt).slice(0, 16).replace('T', ' ');
     const r = db.prepare('SELECT episode_id FROM tasks WHERE platform=? AND detail=?').get(platform, `发布于 ${stamp}`);
     if (r) return r.episode_id;
+    // 登记的发布时间可能差一小时（早先人工换算时区时没算夏令时）。X 以外的平台：前后 65 分钟内只有一篇时认它，
+    // 并把登记的时间改成页面上的真实时间，下次就能精确对上。X 靠帖子编号，不走这条。
+    if (platform !== 'x') {
+      const t0 = Date.parse(it.publishedAt);
+      const near = db.prepare("SELECT episode_id id, detail FROM tasks WHERE platform=? AND detail LIKE '发布于 ____-__-__ __:__'").all(platform)
+        .map((x) => ({ id: x.id, diff: Math.abs(Date.parse(x.detail.slice(4).replace(' ', 'T') + ':00+08:00') - t0) }))
+        .filter((x) => x.diff <= 65 * 60e3);
+      if (near.length === 1) {
+        db.prepare('UPDATE tasks SET detail=? WHERE episode_id=? AND platform=?').run(`发布于 ${stamp}`, near[0].id, platform);
+        return near[0].id;
+      }
+    }
   }
   if (it.title) {
     const want = norm(it.title);
