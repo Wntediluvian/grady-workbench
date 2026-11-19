@@ -85,7 +85,11 @@ export async function xProfile() {
   await new Promise((r) => setTimeout(r, 3000));
   const seen = new Map();
   const pick = (lab, word) => { const m = lab.match(new RegExp('(\\d[\\d,.]*)\\s*(?:次)?' + word)); return m ? +m[1].replace(/[,.]/g, '') : null; };
-  for (let i = 0; i < 16; i++) {
+  // 等第一批帖子出来再开始（最多 15 秒）
+  for (let i = 0; i < 15 && !document.querySelector('article'); i++) await new Promise((r) => setTimeout(r, 1000));
+  // 列表是虚拟滚动的：一次只滚大半屏，滚太快会跳过还没渲染出来的帖子。滚到底（连续 3 次滚不动）或 60 次为止
+  let stuck = 0, lastY = -1;
+  for (let i = 0; i < 60 && stuck < 3; i++) {
     document.querySelectorAll('article').forEach((a) => {
       const link = [...a.querySelectorAll('a[href*="/status/"]')].map((x) => x.getAttribute('href')).find((h) => /\/status\/\d+$/.test(h)) || '';
       const g = a.querySelector('[role=group]');
@@ -93,8 +97,10 @@ export async function xProfile() {
       const time = a.querySelector('time');
       if (link && !seen.has(link)) seen.set(link, { statusId: link.split('/').pop(), publishedAt: time ? time.dateTime : null, views: pick(lab, '观看') ?? pick(lab, 'views?'), likes: pick(lab, '喜欢') ?? pick(lab, 'likes?'), comments: pick(lab, '回复') ?? pick(lab, 'repl'), shares: pick(lab, '转帖') ?? pick(lab, 'reposts?'), favorites: pick(lab, '书签') ?? pick(lab, 'bookmarks?') });
     });
-    window.scrollBy(0, 1600);
-    await new Promise((r) => setTimeout(r, 1000 + Math.random() * 600));
+    window.scrollBy(0, Math.max(400, Math.round(window.innerHeight * 0.7)));
+    await new Promise((r) => setTimeout(r, 700 + Math.random() * 500));
+    stuck = Math.abs(window.scrollY - lastY) < 5 ? stuck + 1 : 0;
+    lastY = window.scrollY;
   }
   const fol = [...document.querySelectorAll('a[href$="/verified_followers"],a[href$="/followers"]')].map((a) => a.innerText.replace(/\s+/g, ' ')).join(' ');
   const fm = fol.match(/([\d,.]+)\s*(万)?\s*(?:关注者|Followers)/i);
