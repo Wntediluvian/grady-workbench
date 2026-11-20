@@ -6,7 +6,7 @@ import { execFile } from 'node:child_process';
 
 export function sendWechat(text, cfg, { quiet = false } = {}) {
   const lines = String(text).split('\n').map((l) => l.trim()).filter(Boolean);
-  const head = lines.shift() || '麦田';
+  const head = lines.shift() || '工作台';
   const args = [cfg.notify, '--from', cfg.from || '发布工作台', head];
   if (lines.length) args.push(lines.join('\n'));
   return new Promise((resolve) => {

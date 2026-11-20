@@ -9,3 +9,4 @@ scripts-*.sh
 MAINTENANCE.md
 demo/
 src/*.local.mjs
+extension-collector/token.js

@@ -29,14 +29,14 @@ const yes = async (q, def = true) => { def = def && !!process.stdin.isTTY; const
 const ok = (t) => console.log(`  ✅ ${t}`), bad = (t) => console.log(`  ❌ ${t}`), tip = (t) => console.log(`  ·  ${t}`);
 const home = (p) => p.replace(/^~(?=\/|$)/, os.homedir());
 
-console.log('\n麦田 · 安装向导\n');
+console.log('\n工作台 · 安装向导\n');
 console.log('一、检查环境');
 const [maj, min] = process.versions.node.split('.').map(Number);
 if (maj > 22 || (maj === 22 && min >= 5)) ok(`Node.js ${process.versions.node}`); else { bad(`Node.js ${process.versions.node}，需要 22.5 以上（用到内置 node:sqlite）`); tip(`卡住了看这里：${GROUP_URL}`); process.exit(1); }
 if (process.platform !== 'darwin') tip('目前只在 macOS 上实测过；其他系统需要自己改开机自启和 NAS 挂载部分');
 const chrome = ['/Applications/Google Chrome.app', path.join(os.homedir(), 'Applications/Google Chrome.app')].find(fs.existsSync);
 chrome ? ok('Google Chrome') : bad('没找到 Google Chrome，请先安装');
-let cf = false; try { execFileSync('which', ['cloudflared'], { stdio: 'pipe' }); cf = true; ok('cloudflared（可选，远程访问用）'); } catch { tip('没装 cloudflared：想在手机上远程看麦田，之后 brew install cloudflared'); }
+let cf = false; try { execFileSync('which', ['cloudflared'], { stdio: 'pipe' }); cf = true; ok('cloudflared（可选，远程访问用）'); } catch { tip('没装 cloudflared：想在手机上远程看工作台，之后 brew install cloudflared'); }
 
 if (fs.existsSync(CFG) && !(await yes('\n已经有 config.json，要重新生成吗？（旧的会备份成 config.json.bak）', false))) {
   console.log('\n保留现有配置。'); rl.close(); process.exit(0);
@@ -47,7 +47,7 @@ const ex = JSON.parse(fs.readFileSync(path.join(ROOT, 'config.example.json'), 'u
 const cfg = { ...ex };
 // 麦田发布助手默认用 Chrome 应用商店版：装进麦田的专用 Chrome，Chrome 自动更新，最后一步「打开专用 Chrome 去登录」时会一起打开商店页
 cfg.plugin = 'store'; delete cfg.pluginDir;
-tip(`1. 麦田发布助手（Chrome 插件）从应用商店装：${STORE_URL}（最后一步会在麦田的专用 Chrome 里打开，点「添加至 Chrome」）`);
+tip(`1. 发布助手（Chrome 插件）从应用商店装：${STORE_URL}（最后一步会在工作台的专用 Chrome 里打开，点「添加至 Chrome」）`);
 cfg.rootPath = home(await ask('2. 发布工程放在哪个文件夹？（每期一个子目录，里面有成片、封面、publish.json；NAS 或本地都行）', path.join(os.homedir(), 'Movies/发布工程')));
 fs.mkdirSync(cfg.rootPath, { recursive: true });
 const nas = await ask('3. 如果发布工程在 NAS 上，填 SMB 地址，掉线时自动重挂（比如 smb://用户名@192.168.1.10/共享名；不用就回车）');
@@ -56,7 +56,7 @@ const hook = await ask('4. 飞书群机器人的 Webhook 地址（通知卡片�
 if (hook) cfg.feishuWebhook = hook; else delete cfg.feishuWebhook;
 const xh = await ask('5. 你的 X 用户名（不带 @，用来采粉丝；不用就回车）');
 if (xh) cfg.xHandle = xh.replace(/^@/, ''); else delete cfg.xHandle;
-cfg.web = { port: +(await ask('6. 麦田网页用哪个端口？', '8787')), key: crypto.randomBytes(12).toString('base64url') };
+cfg.web = { port: +(await ask('6. 工作台网页用哪个端口？', '8787')), key: crypto.randomBytes(12).toString('base64url') };
 if (await yes('7. 有自己的网站（课程站/会员站）要看转化吗？', false)) {
   cfg.site = { name: await ask('   站点叫什么？', '知识站'), base: await ask('   站点地址', 'https://example.com'), adminPath: await ask('   管理后台路径', '/admin'),
     coursesApi: await ask('   课程列表接口', '/api/courses?admin=1'), dashboardApi: await ask('   数据汇总接口', '/api/admin/dashboard'), coursePath: '/series/{seriesId}?courseId={id}' };
@@ -73,7 +73,7 @@ console.log('\n三、收尾');
 if (process.platform === 'darwin' && await yes('装成开机自启的守护进程？（推荐，之后自动采数据、发通知）')) {
   spawnSync(path.join(ROOT, 'scripts/install-launchd.sh'), cf && await yes('顺带装远程访问隧道（cloudflared）？', false) ? ['--tunnel'] : [], { stdio: 'inherit' });
 }
-if (chrome && await yes('现在打开专用 Chrome：先从应用商店添加麦田发布助手，再登录各平台？（每个平台扫码或登录一次）')) {
+if (chrome && await yes('现在打开专用 Chrome：先从应用商店添加发布助手，再登录各平台？（每个平台扫码或登录一次）')) {
   spawnSync(process.execPath, [path.join(ROOT, 'src/hub.mjs'), 'login'], { stdio: 'inherit' });
 }
 console.log(`

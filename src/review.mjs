@@ -99,10 +99,10 @@ export function weekly(now = Date.now()) {
   const fans = fansGain(from, to), fansP = fansGain(pFrom, pTo);
   const site = SITE ? siteSum(from, to) : null, siteP = SITE ? siteSum(pFrom, pTo) : null;
   const vs = (a, b) => b ? `（上周 ${fmt(b)}，${a >= b ? '+' : ''}${pct(a - b, b, 0)}）` : '';
-  const L = [`🗓 麦田周报｜${dayOf(from).slice(5)} ～ ${dayOf(to).slice(5)}`];
+  const L = [`🗓 工作台周报｜${dayOf(from).slice(5)} ～ ${dayOf(to).slice(5)}`];
   L.push(`发了 ${pubs.length} 期${pubs.length ? '：' + pubs.map(e => `「${nickOf(e)}」`).join('、') : ''}`);
   const hasM = db.prepare('SELECT 1 FROM metrics WHERE day>=? AND day<=? LIMIT 1').get(dayOf(from), dayOf(to));
-  L.push(hasM ? `全平台新增阅读 ${fmt(cur.sum)}${vs(cur.sum, prv.sum)}` : '这一周麦田还没有流量数据（从接入麦田那天起才有）');
+  L.push(hasM ? `全平台新增阅读 ${fmt(cur.sum)}${vs(cur.sum, prv.sum)}` : '这一周工作台还没有流量数据（从接入工作台那天起才有）');
   L.push(`各平台涨粉 ${fans.sum >= 0 ? '+' : ''}${fmt(fans.sum)}${vs(fans.sum, fansP.sum)}`);
   if (site && site.reg != null) L.push(`${SITE.name}：新注册 ${fmt(site.reg)}${vs(site.reg, siteP && siteP.reg)}｜新会员 ${fmt(site.vip)}｜收入 ¥${fmt(site.revenue)}`);
   L.push('');

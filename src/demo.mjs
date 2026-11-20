@@ -8,7 +8,7 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const D = path.join(ROOT, 'demo'), PROJ = path.join(D, 'projects');
 if (process.argv.includes('--reset')) fs.rmSync(D, { recursive: true, force: true });
 fs.mkdirSync(PROJ, { recursive: true });
-const cfg = { name: '麦田 · 演示', web: { port: 8788, key: 'demo' }, rootPath: PROJ, driver: 'direct', keepAlive: [],
+const cfg = { name: '工作台 · 演示', web: { port: 8788, key: 'demo' }, rootPath: PROJ, driver: 'direct', keepAlive: [],
   site: { name: '课程站', base: 'https://example.com' }, xHandle: 'demo' };
 fs.writeFileSync(path.join(D, 'config.json'), JSON.stringify(cfg, null, 2));
 process.env.MAITIAN_CONFIG = path.join(D, 'config.json');

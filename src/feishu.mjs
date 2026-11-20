@@ -18,7 +18,7 @@ function webUrl() { try { return JSON.parse(fs.readFileSync(path.join(ROOT, 'dat
 
 export function toCard(text) {
   const lines = String(text).split('\n').map((l) => l.trim());
-  const head = lines.shift() || '麦田';
+  const head = lines.shift() || '工作台';
   const template = (COLOR.find(([re]) => re.test(head)) || [null, 'blue'])[1];
   // 标题太长（比如「✅ 期名」）：期名放标题，后半句放副标题
   const [title, ...restHead] = head.split(/\s*[|｜]\s*(?=[^|｜]*$)/);
@@ -39,8 +39,8 @@ export function toCard(text) {
   if (!elements.length) elements.push({ tag: 'markdown', content: link(head) });
   const url = webUrl();
   elements.push({ tag: 'hr' });
-  elements.push({ tag: 'note', elements: [{ tag: 'plain_text', content: `麦田 · ${new Date().toLocaleString('zh-CN', { hour12: false, timeZone: 'Asia/Shanghai' }).slice(5, 16)}` }] });
-  if (url) elements.push({ tag: 'action', actions: [{ tag: 'button', text: { tag: 'plain_text', content: '打开麦田' }, type: 'primary', url }] });
+  elements.push({ tag: 'note', elements: [{ tag: 'plain_text', content: `工作台 · ${new Date().toLocaleString('zh-CN', { hour12: false, timeZone: 'Asia/Shanghai' }).slice(5, 16)}` }] });
+  if (url) elements.push({ tag: 'action', actions: [{ tag: 'button', text: { tag: 'plain_text', content: '打开工作台' }, type: 'primary', url }] });
   return { config: { wide_screen_mode: true }, header: { template, title: { tag: 'plain_text', content: title.slice(0, 80) }, ...(restHead.length ? { subtitle: { tag: 'plain_text', content: restHead.join(' ').slice(0, 80) } } : {}) }, elements };
 }
 

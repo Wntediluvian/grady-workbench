@@ -1,3 +1,6 @@
+> **这个仓库是“Grady 工作台”**：在开源项目[麦田](https://github.com/CzzzzzzJ/mdldm-maitian)（MIT，作者麦当 mdldm）的基础上改的，原作者的许可证和署名都保留。
+> 我们自己加的部分：图文账号的大屏适配、微信通知、已发文章导入（`tools/import-csv.mjs`）、只读采集插件（`extension-collector/`）和接收端（`src/collect.mjs`）。下面是麦田原来的说明。
+
 <p align="center"><img src="docs/readme/banner.png" alt="麦田 · 给多平台博主的开源工作台" /></p>
 
 <p align="center">
