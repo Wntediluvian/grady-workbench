@@ -7,7 +7,7 @@ import { BASE, TOKEN, X_HANDLE, PROFILE, ACCOUNTS } from './token.js';
 
 // 每次改了这个文件夹里的代码就改这个编号。插件开工前会问工作台磁盘上的编号是多少，不一样就自己重新加载，
 // 所以以后改读取规则不用再去扩展管理页手动点“重新加载”。
-const BUILD = '2026-11-20.1';
+const BUILD = '2026-11-20.2';
 // 后台标签页里，X 和小红书的列表滚不出更早的条目（页面不可见时不加载），每天自动跑只读得到最近十来条，够用。
 // 点图标手动采时改在前台开页面，能把更早的也读全；那两三分钟里标签页会自己切换，结束后切回原来那页。
 let foreground = false;
@@ -94,7 +94,7 @@ async function collectAll(force) {
   if (running) return;
   running = true;
   await chrome.action.setBadgeText({ text: '…' });
-  const st = await chrome.storage.local.get(['off', 'pending']);
+  const st = await chrome.storage.local.get(['off', 'pending', 'lastAutoDay']);
   const off = force ? {} : st.off || {};
   const results = [];
   foreground = !!force;
@@ -112,7 +112,8 @@ async function collectAll(force) {
     const pending = [...(st.pending || []), payload].slice(-5);
     const left = [];
     for (const one of pending) { try { await post(one); } catch { left.push(one); } }
-    await chrome.storage.local.set({ off, pending: left, lastRunDay: bjDay(), lastRun: { at: payload.at, summary: results.map((r) => `${r.platform}:${r.error || (r.items || []).length}`).join(' ') } });
+    await chrome.storage.local.set({ off, pending: left, // 北京 9 点以前的采集不算当天的：半夜手动点一次，第二天上午的自动采集照样会跑
+      lastAutoDay: bjNow().getUTCHours() >= 9 ? bjDay() : st.lastAutoDay || '', lastRun: { at: payload.at, summary: results.map((r) => `${r.platform}:${r.error || (r.items || []).length}`).join(' ') } });
     await chrome.action.setBadgeText({ text: left.length ? '!' : '✓' });
   } finally {
     running = false;
@@ -148,8 +149,8 @@ chrome.runtime.onInstalled.addListener(() => chrome.alarms.create('tick', { peri
 chrome.runtime.onStartup.addListener(() => chrome.alarms.create('tick', { periodInMinutes: 30, delayInMinutes: 5 }));
 chrome.alarms.onAlarm.addListener(async (a) => {
   if (a.name !== 'tick') return;
-  const { lastRunDay } = await chrome.storage.local.get('lastRunDay');
-  if (bjNow().getUTCHours() >= 9 && lastRunDay !== bjDay()) await start(false);
+  const { lastAutoDay } = await chrome.storage.local.get('lastAutoDay');
+  if (bjNow().getUTCHours() >= 9 && lastAutoDay !== bjDay()) await start(false);
   else await reloadIfStale('');
 });
 chrome.action.onClicked.addListener(() => start(true));
