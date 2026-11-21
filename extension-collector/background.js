@@ -7,7 +7,7 @@ import { BASE, TOKEN, X_HANDLE, PROFILE, ACCOUNTS } from './token.js';
 
 // 每次改了这个文件夹里的代码就改这个编号。插件开工前会问工作台磁盘上的编号是多少，不一样就自己重新加载，
 // 所以以后改读取规则不用再去扩展管理页手动点“重新加载”。
-const BUILD = '2026-11-20.2';
+const BUILD = '2026-11-21.1';
 // 后台标签页里，X 和小红书的列表滚不出更早的条目（页面不可见时不加载），每天自动跑只读得到最近十来条，够用。
 // 点图标手动采时改在前台开页面，能把更早的也读全；那两三分钟里标签页会自己切换，结束后切回原来那页。
 let foreground = false;
@@ -78,6 +78,8 @@ async function collectPlatform(p) {
     if (r.head !== undefined && !r.head.includes(want)) return { platform: p, error: 'wrong_account' };
     if (r.followers != null) out.followers = r.followers;
     if (r.items) out.items.push(...r.items);
+    // 列表页一条都没读到：后台标签页里抖音的列表有时不渲染。记成错误，不当作“没有作品”，点图标在前台重采
+    if (step.scroll && r.items && !r.items.length) return { platform: p, followers: out.followers, error: foreground ? 'empty_list' : 'empty_list_background' };
     await sleep(3000 + Math.random() * 4000);
   }
   return out;

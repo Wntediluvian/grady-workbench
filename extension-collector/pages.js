@@ -14,7 +14,7 @@ export async function scrollAll(rounds) {
 
 export function loggedOut() {
   const t = (document.body.innerText || '').slice(0, 4000);
-  return /login|passport|signin/i.test(location.pathname + location.hostname) || /扫码登录|验证码登录|登录后|请先登录|立即登录/.test(t);
+  return /login|passport|signin/i.test(location.pathname + location.hostname) || /扫码登录|验证码登录|登录后|请先登录|立即登录|使用账号登录|微信扫一扫，选择公众平台账号登录/.test(t);
 }
 
 // 抖音 作品管理：页面上的时间是电脑本地时区
